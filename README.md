@@ -77,3 +77,9 @@ If you fork it, please keep that, and put your own contact in the `User-Agent`.
 ## Privacy
 
 No analytics, no ads, no sign-in. The only network traffic is to e621 (its API and image/video servers).
+
+## License
+
+[MIT](LICENSE): use it, copy it, modify it, fork it, send pull requests, do whatever you like.
+The license covers the code. The artwork in the screenshots belongs to its artists, and everything the app
+shows comes from e621.
