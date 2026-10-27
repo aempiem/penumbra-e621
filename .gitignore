@@ -1,0 +1,26 @@
+# build output
+build/
+app/build/
+.gradle/
+.kotlin/
+*.apk
+*.aab
+
+# local machine files
+local.properties
+.idea/
+*.iml
+
+# signing key: never commit it (it is what lets the app update in place)
+keystore/
+*.keystore
+*.jks
+
+# personal backups and design-tool scratch files
+backups/
+.impeccable/
+licenses/
+
+# internal design notes
+PRODUCT.md
+DESIGN.md

@@ -1,0 +1,36 @@
+# Baseline profile: classes and methods used while starting the app and scrolling the feed.
+# ART compiles these ahead of time, so the first launch and the first scrolls are not interpreted.
+HSPLapp/e6reels/**;->**(**)**
+Lapp/e6reels/**;
+HSPLandroidx/compose/runtime/**;->**(**)**
+Landroidx/compose/runtime/**;
+HSPLandroidx/compose/ui/**;->**(**)**
+Landroidx/compose/ui/**;
+HSPLandroidx/compose/foundation/**;->**(**)**
+Landroidx/compose/foundation/**;
+HSPLandroidx/compose/animation/**;->**(**)**
+Landroidx/compose/animation/**;
+HSPLandroidx/compose/material3/**;->**(**)**
+Landroidx/compose/material3/**;
+HSPLandroidx/lifecycle/**;->**(**)**
+Landroidx/lifecycle/**;
+HSPLandroidx/room/**;->**(**)**
+Landroidx/room/**;
+HSPLandroidx/datastore/**;->**(**)**
+Landroidx/datastore/**;
+HSPLandroidx/media3/exoplayer/**;->**(**)**
+Landroidx/media3/exoplayer/**;
+HSPLandroidx/media3/common/**;->**(**)**
+Landroidx/media3/common/**;
+HSPLandroidx/media3/datasource/**;->**(**)**
+Landroidx/media3/datasource/**;
+HSPLcoil/**;->**(**)**
+Lcoil/**;
+HSPLokhttp3/**;->**(**)**
+Lokhttp3/**;
+HSPLokio/**;->**(**)**
+Lokio/**;
+HSPLkotlinx/coroutines/**;->**(**)**
+Lkotlinx/coroutines/**;
+HSPLkotlinx/serialization/**;->**(**)**
+Lkotlinx/serialization/**;

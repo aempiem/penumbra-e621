@@ -1,0 +1,11 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Same ring for Android 13+ themed icons: the system tints it. -->
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="M27,54 a27,27 0 1,0 54,0 a27,27 0 1,0 -54,0 Z M30,50.5 a20.5,20.5 0 1,0 41,0 a20.5,20.5 0 1,0 -41,0 Z" />
+</vector>
