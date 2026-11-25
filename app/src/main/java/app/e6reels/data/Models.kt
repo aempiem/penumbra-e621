@@ -4,48 +4,57 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 // ---- e621 API DTOs (only the fields we use) ----
-
-@Serializable
-data class PostsResponse(val posts: List<PostDto> = emptyList())
+// The current post format (`mode=extended`): a bare array of posts, every file under `files`,
+// the score under `stats` and the tags grouped by category. See https://e621.wiki/post-files/
 
 @Serializable
 data class PostDto(
     val id: Int,
-    val file: FileDto? = null,
-    val preview: PreviewDto? = null,
-    val sample: SampleDto? = null,
-    val score: ScoreDto? = null,
+    val files: FilesDto? = null,
+    val stats: StatsDto? = null,
     val tags: TagsDto? = null,
     val rating: String = "e",
 )
 
 @Serializable
-data class FileDto(
-    val width: Int = 0,
-    val height: Int = 0,
+data class FilesDto(
+    val meta: FileMetaDto? = null,
+    val original: OriginalDto? = null,
+    val preview: ImageDto? = null,
+    val sample: ImageDto? = null,
+    /** Only on videos. */
+    val video: VideoDto? = null,
+)
+
+@Serializable
+data class FileMetaDto(
     val ext: String = "",
     val size: Long = 0,
+    @SerialName("has_sample") val hasSample: Boolean = false,
+)
+
+@Serializable
+data class OriginalDto(
+    val width: Int = 0,
+    val height: Int = 0,
+    /** Null when the post is hidden from anonymous users. */
     val url: String? = null,
 )
 
 @Serializable
-data class PreviewDto(val url: String? = null)
+data class ImageDto(val jpg: String? = null)
 
 @Serializable
-data class SampleDto(
-    val has: Boolean = false,
-    val url: String? = null,
-    val alternates: AlternatesDto? = null,
-)
-
-@Serializable
-data class AlternatesDto(
+data class VideoDto(
     val variants: Map<String, VariantDto> = emptyMap(),
     val samples: Map<String, VariantDto> = emptyMap(),
 )
 
 @Serializable
 data class VariantDto(val url: String? = null)
+
+@Serializable
+data class StatsDto(val score: ScoreDto? = null)
 
 @Serializable
 data class ScoreDto(val total: Int = 0)
@@ -103,19 +112,21 @@ private const val MAX_ORIGINAL_IMAGE_BYTES = 800_000L
 private const val MAX_TAGS = 250
 
 fun PostDto.toPost(quality: VideoQuality = VideoQuality.P480): Post? {
-    val f = file ?: return null
-    val fileUrl = f.url ?: return null // hidden/blocked for anonymous users
-    val ext = f.ext.lowercase()
+    val f = files ?: return null
+    val meta = f.meta ?: return null
+    val original = f.original ?: return null
+    val fileUrl = original.url ?: return null // hidden/blocked for anonymous users
+    val ext = meta.ext.lowercase()
     if (ext == "swf" || ext == "") return null
 
-    val sampleUrl = sample?.takeIf { it.has }?.url
-    val previewUrl = preview?.url ?: sampleUrl ?: fileUrl
+    val sampleUrl = f.sample?.jpg?.takeIf { meta.hasSample }
+    val previewUrl = f.preview?.jpg ?: sampleUrl ?: fileUrl
     val isVideo = ext == "webm" || ext == "mp4"
 
     val mediaUrl: String
     val posterUrl: String
     if (isVideo) {
-        val alt = sample?.alternates
+        val alt = f.video
         val s480 = alt?.samples?.get("480p")?.url
         val s720 = alt?.samples?.get("720p")?.url
         // the chosen quality if the post has it, else the closest sample; the original is the last resort
@@ -132,7 +143,7 @@ fun PostDto.toPost(quality: VideoQuality = VideoQuality.P480): Post? {
             mediaUrl = fileUrl
             posterUrl = sampleUrl ?: previewUrl
         } else {
-            mediaUrl = if (sampleUrl == null || f.size in 1..MAX_ORIGINAL_IMAGE_BYTES) fileUrl else sampleUrl
+            mediaUrl = if (sampleUrl == null || meta.size in 1..MAX_ORIGINAL_IMAGE_BYTES) fileUrl else sampleUrl
             posterUrl = mediaUrl
         }
     }
@@ -145,9 +156,9 @@ fun PostDto.toPost(quality: VideoQuality = VideoQuality.P480): Post? {
         posterUrl = posterUrl,
         thumbUrl = previewUrl,
         ext = ext,
-        width = f.width,
-        height = f.height,
-        score = score?.total ?: 0,
+        width = original.width,
+        height = original.height,
+        score = stats?.score?.total ?: 0,
         rating = rating,
         artists = t.artist.filter { it !in hiddenArtistTags },
         keyTags = key,

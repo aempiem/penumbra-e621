@@ -31,6 +31,14 @@ enum class VideoQuality(val label: String) {
     ORIGINAL("Original"),
 }
 
+/** GIFs have no lighter version and can weigh tens of MB, so bigger ones can be left out of the feed. */
+enum class GifLimit(val label: String, val bytes: Long) {
+    MB1("1 MB", 1L shl 20),
+    MB3("3 MB", 3L shl 20),
+    MB8("8 MB", 8L shl 20),
+    NONE("No limit", 0),
+}
+
 val ALL_RATINGS = listOf("s" to "Safe", "q" to "Questionable", "e" to "Explicit")
 
 data class FeedSettings(
@@ -41,6 +49,7 @@ data class FeedSettings(
     val videoQuality: VideoQuality = VideoQuality.P480,
     /** Skip posts that were already on screen before (in any session). */
     val hideSeen: Boolean = true,
+    val gifLimit: GifLimit = GifLimit.MB3,
     /** The tags of the one-off search ([SEARCH_ID]); a leading "-" excludes a tag. */
     val searchTags: List<String> = emptyList(),
     /** [FOR_YOU_ID] = personalised list (default), 0 = no list: the whole site. */
@@ -58,6 +67,7 @@ class Prefs(private val context: Context) {
         val minScore = intPreferencesKey("min_score")
         val videoQuality = stringPreferencesKey("video_quality")
         val hideSeen = booleanPreferencesKey("hide_seen")
+        val gifLimit = stringPreferencesKey("gif_limit")
         val searchTags = stringPreferencesKey("search_tags")
         val offlineLimit = stringPreferencesKey("offline_limit")
         val name = stringPreferencesKey("profile_name")
@@ -76,6 +86,7 @@ class Prefs(private val context: Context) {
             minScore = p[K.minScore] ?: d.minScore,
             videoQuality = VideoQuality.entries.firstOrNull { it.name == p[K.videoQuality] } ?: d.videoQuality,
             hideSeen = p[K.hideSeen] ?: d.hideSeen,
+            gifLimit = GifLimit.entries.firstOrNull { it.name == p[K.gifLimit] } ?: d.gifLimit,
             searchTags = p[K.searchTags].orEmpty().split(' ').filter { it.isNotBlank() },
             activeListId = p[K.activeList] ?: d.activeListId,
         )
@@ -89,6 +100,7 @@ class Prefs(private val context: Context) {
             it[K.minScore] = s.minScore
             it[K.videoQuality] = s.videoQuality.name
             it[K.hideSeen] = s.hideSeen
+            it[K.gifLimit] = s.gifLimit.name
         }
     }
 

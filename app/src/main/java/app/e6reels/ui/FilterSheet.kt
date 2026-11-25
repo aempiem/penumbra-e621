@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.e6reels.data.ALL_RATINGS
 import app.e6reels.data.FeedSettings
+import app.e6reels.data.GifLimit
 import app.e6reels.data.MediaMode
 import app.e6reels.data.Sort
 import app.e6reels.data.VideoQuality
@@ -91,6 +92,13 @@ fun FilterSheet(
                         VideoQuality.entries.map { it.label },
                         VideoQuality.entries.indexOf(draft.videoQuality),
                         { draft = draft.copy(videoQuality = VideoQuality.entries[it]) },
+                    )
+                }
+                SettingRow("Max GIF size") {
+                    Segmented(
+                        GifLimit.entries.map { it.label },
+                        GifLimit.entries.indexOf(draft.gifLimit),
+                        { draft = draft.copy(gifLimit = GifLimit.entries[it]) },
                     )
                 }
                 SettingRow("Rating") {

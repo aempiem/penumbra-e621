@@ -53,8 +53,9 @@ class E621Api(mediaClient: OkHttpClient) {
             .addQueryParameter("tags", tags)
             .addQueryParameter("limit", limit.toString())
             .addQueryParameter("page", page.toString())
+            .addQueryParameter("mode", "extended") // tags grouped by category
             .build()
-        return json.decodeFromString(PostsResponse.serializer(), get(url.toString())).posts
+        return json.decodeFromString(ListSerializer(PostDto.serializer()), get(url.toString()))
     }
 
     suspend fun autocomplete(query: String): List<TagSuggestion> {
@@ -66,14 +67,19 @@ class E621Api(mediaClient: OkHttpClient) {
     }
 }
 
+private const val MAX_GLOBAL_BLOCKED = 20
+
 /** Turns the active list + global filters into an e621 search string. */
-fun buildQuery(s: FeedSettings, list: TagList?): String {
+fun buildQuery(s: FeedSettings, list: TagList?, globalBlocked: List<String> = emptyList()): String {
     val parts = mutableListOf<String>()
     if (list != null) {
         val any = list.anyMode && list.include.size > 1
         parts += list.include.map { if (any) "~$it" else it }
         parts += list.blocked.map { "-$it" }
     }
+    // blocked tags apply everywhere; e621 caps a search at 40 tags, so keep room for the rest
+    val own = list?.blocked.orEmpty() + list?.include.orEmpty()
+    parts += globalBlocked.filter { it !in own }.take(MAX_GLOBAL_BLOCKED).map { "-$it" }
     when (s.ratings.size) {
         1 -> parts += "rating:${s.ratings.first()}"
         2 -> parts += "-rating:${listOf("s", "q", "e").first { it !in s.ratings }}"

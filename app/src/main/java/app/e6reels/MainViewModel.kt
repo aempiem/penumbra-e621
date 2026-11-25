@@ -25,6 +25,7 @@ import app.e6reels.data.toPost
 import app.e6reels.data.buildForYou
 import app.e6reels.data.rankTags
 import app.e6reels.data.tagsMissingCounts
+import app.e6reels.data.GifLimit
 import app.e6reels.data.buildQuery
 import app.e6reels.data.toEntity
 import app.e6reels.data.toModel
@@ -179,6 +180,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val seenBefore = HashSet<Int>()
     private var seenLoaded = false
     private var hideSeen = true
+    private var gifLimit = GifLimit.MB3
     private var seenInserts = 0
     private var job: Job? = null
     private var query = ""
@@ -198,26 +200,30 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val forYou = s.activeListId == FOR_YOU_ID
         videoQuality = s.videoQuality
         hideSeen = s.hideSeen
+        gifLimit = s.gifLimit
         excludeLiked = forYou
         if (!seenLoaded) {
             seenBefore += c.db.seen().ids()
             seenLoaded = true
         }
+        val adjust = c.prefs.forYouAdjust.first()
+        val liked = dao.snapshot().map { it.toPost() }
+        val bad = c.db.disliked().snapshot().map { it.toPost() }
+        val globalBlocked = (adjust.blocked + all.flatMap { it.blocked } + autoBlocked(liked, bad)).distinct()
         val list = when (s.activeListId) {
             FOR_YOU_ID -> {
-                val adjust = c.prefs.forYouAdjust.first()
                 buildForYou(
-                    dao.snapshot().map { it.toPost() },
+                    liked,
                     c.prefs.tagCounts.first(),
                     adjust.include,
-                    adjust.blocked,
-                    c.db.disliked().snapshot().map { it.toPost() },
+                    globalBlocked,
+                    bad,
                 ).also { _forYouNow.value = it.include }
             }
             SEARCH_ID -> searchList(s.searchTags)
             else -> all.firstOrNull { it.id == s.activeListId }
         }
-        return buildQuery(s, list)
+        return buildQuery(s, list, globalBlocked)
     }
 
     init {
@@ -315,7 +321,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     val dtos = c.api.posts(query, page)
                     page++
                     end = dtos.isEmpty() || page > MAX_PAGE
-                    added = dtos.mapNotNull { it.toPost(videoQuality) }
+                    added = dtos
+                        .filter { d -> gifLimit.bytes == 0L || d.files?.meta?.let { it.ext.lowercase() != "gif" || it.size <= gifLimit.bytes } != false }
+                        .mapNotNull { it.toPost(videoQuality) }
                         .filter { seen.add(it.id) && !(excludeLiked && it.id in likedIds.value) && !(hideSeen && it.id in seenBefore) }
                 }
                 _feed.update { it.copy(posts = it.posts + added, loading = false, endReached = end) }

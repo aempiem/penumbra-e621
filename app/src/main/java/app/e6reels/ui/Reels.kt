@@ -95,6 +95,7 @@ import app.e6reels.E6App
 import app.e6reels.R
 import app.e6reels.data.Post
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
 import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
@@ -245,14 +246,21 @@ fun ReelsPager(
     }
 
     // Warm the image cache for what is coming. Only the bytes matter, so decode tiny (cheap) and keep it out of memory.
-    val upcoming = posts.drop(settled + 1).take(3)
+    // GIFs have no lighter sample and weigh megabytes, so the animation itself is fetched ahead too.
+    val upcoming = posts.drop(settled + 1).take(4)
     LaunchedEffect(upcoming.map { it.id }) {
         val loader = context.imageLoader
-        upcoming.forEach { p ->
+        upcoming.forEachIndexed { i, p ->
             loader.enqueue(
                 ImageRequest.Builder(context).data(p.posterUrl)
                     .size(64, 64).memoryCachePolicy(CachePolicy.DISABLED).build(),
             )
+            if (p.ext == "gif" && i < 4) {
+                loader.enqueue(
+                    ImageRequest.Builder(context).data(p.mediaUrl)
+                        .size(64, 64).memoryCachePolicy(CachePolicy.DISABLED).build(),
+                )
+            }
         }
     }
 
@@ -406,6 +414,18 @@ private fun ReelPage(
         }
     }
 
+    // the still shows at once; a spinner says the animation is still on its way
+    var gifLoading by remember(post.id) { mutableStateOf(false) }
+    var gifSpinner by remember(post.id) { mutableStateOf(false) }
+    LaunchedEffect(gifLoading, isCurrent) {
+        if (gifLoading && isCurrent) {
+            delay(400)
+            gifSpinner = true
+        } else {
+            gifSpinner = false
+        }
+    }
+
     LaunchedEffect(heart) {
         if (heart) {
             delay(700)
@@ -467,7 +487,10 @@ private fun ReelPage(
             AsyncImage(post.posterUrl, null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
         }
         if (isCurrent && post.ext == "gif") {
-            AsyncImage(post.mediaUrl, null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+            AsyncImage(
+                post.mediaUrl, null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize(),
+                onState = { gifLoading = it is AsyncImagePainter.State.Loading || it is AsyncImagePainter.State.Empty },
+            )
         }
         if (post.isVideo && player != null) {
             AndroidView(
@@ -480,6 +503,13 @@ private fun ReelPage(
 
         val overlays = !landscape && !controls
         if (overlays) {
+        if (gifSpinner && isCurrent && post.ext == "gif") {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center).size(36.dp),
+                color = Color.White,
+                strokeWidth = 3.dp,
+            )
+        }
         if (showVideo && showSpinner && error == null) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center).size(36.dp),
